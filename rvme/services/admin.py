@@ -3,6 +3,7 @@ from django.db.models import Count, Q, Sum, F
 from django.db.models.functions import ExtractWeek, ExtractHour
 
 from rvme.core.mixins import ReadOnlyAdminMixin
+from rvme.services.constants import PERIOD
 from .models import TripSummary, EventSummary
 
 import json
@@ -110,6 +111,10 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
              {'time_period': 6, 'total_mileage': 216},
              {'time_period': 7, 'total_mileage': 41}]
             """
+            period_lower = period.lower()
+            
+            if not period_lower in PERIOD:
+                raise ("some reasonable 4XX their side / 5XX our side error")
 
             summary_over_time_period = list(
                 qs.filter(
@@ -119,10 +124,14 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
                     week=ExtractWeek('timestamp')
                 ).annotate(
                     hour=ExtractHour('timestamp')
-                ).values(
-                    period
+                ).distinct(
+                    period_lower
                 ).annotate(
-                    total_mileage=Count('mileage')
+                    time_period=F(period_lower)
+                ).annotate(
+                    total_mileage=Sum('mileage')
+                ).values(
+                    'time_period','total_mileage'
                 )
                 # TODO #3: Complete the rest of this filter to produce the output
                 #  above where param period="week"

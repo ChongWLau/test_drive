@@ -8,3 +8,7 @@ STATS_TIME_PERIODS = Choices(
     ('183_sixmonths', 'Last 6 Months'),
     ('365_year', 'Last Year'),
 )
+
+PERIOD = [
+    'year', 'month', 'week', 'day', 'hour'
+]
