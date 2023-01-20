@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q
+from django.db.models.functions import ExtractWeek, ExtractHour
 
 from rvme.core.mixins import ReadOnlyAdminMixin
 from .models import TripSummary, EventSummary
@@ -119,7 +120,16 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
                 qs.filter(
                     # Graph is time-based so we want to ignore parent Trips
                     child_trips__isnull=True
-                )  # TODO #3: Complete the rest of this filter to produce the output
+                ).annotate(
+                    week=ExtractWeek('timestamp')
+                ).annotate(
+                    hour=ExtractHour('timestamp')
+                ).values(
+                    period
+                ).annotate(
+                    total_mileage=Count('mileage')
+                )
+                # TODO #3: Complete the rest of this filter to produce the output
                 #  above where param period="week"
             )
 
@@ -164,7 +174,7 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
         #   'total_mileage': 55}]
         summary = {
             'total': Count(),
-            'total_mileage': Count()
+            'total_mileage': Count('mileage')
         }
         car_summary_output = qs.distinct('car__pk').annotate(**summary)
 
