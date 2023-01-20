@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum, F
 from django.db.models.functions import ExtractWeek, ExtractHour
 
 from rvme.core.mixins import ReadOnlyAdminMixin
@@ -48,7 +48,7 @@ class EventSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
             'medium_total': Count('type', filter=Q(type__exact='medium')),
             'high_total': Count('type', filter=Q(type__exact='high')),
             'overspeed_total': Count('type', filter=Q(type__exact='overspeed_start')),
-            # 'total_alerts': Sum('low_total'+'medium_total'+'high_total'+'overspeed_total')
+            'total_alerts': F('low_total') + F('medium_total') + F('high_total') + F('overspeed_total')
         }
 
         driver_summary_qs = qs.exclude(user=None).distinct('user__id', 'user__email').annotate(**summary)
@@ -67,15 +67,10 @@ class EventSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
         #  'medium_total': 92,
         #  'overspeed_total': 0,
         #  'total_alerts': 554}
-        driver_event_values = driver_event_summary.values()
         
-        driver_event_summary_total = {
-            'high_total': sum(item['low_total'] for item in driver_event_values),
-            'low_total': sum(item['medium_total'] for item in driver_event_values),
-            'medium_total': sum(item['high_total'] for item in driver_event_values),
-            'overspeed_total': sum(item['overspeed_total'] for item in driver_event_values),
-            # 'total_alerts': sum(item['total_alerts'] for item in driver_event_values)
-        }
+        driver_event_summary_total = qs.exclude(user=None).annotate(**summary).values(
+            'low_total','medium_total','high_total','overspeed_total','total_alerts'
+        )
 
         response.context_data['driver_event_summary_total'] = driver_event_summary_total
 
@@ -141,6 +136,7 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
 
             # TODO #4: Remove the line below and modify the array from above so
             #  that the output where param period="hour" looks correct
+            
             summary_over_time_period_output = summary_over_time_period
 
             return summary_over_time_period_output
@@ -172,11 +168,17 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
         #   'car__registration_number': 'LL68 MTI',
         #   'total': 4,
         #   'total_mileage': 55}]
+
         summary = {
-            'total': Count(),
-            'total_mileage': Count('mileage')
+            'total': Count('trip_id'),
+            'total_mileage': Sum('mileage')
         }
-        car_summary_output = qs.distinct('car__pk').annotate(**summary)
+        
+        car_summary_output = qs.distinct(
+            'car__pk','car__registration'
+        ).annotate(**summary).values(
+            'car__pk','car__registration','total','total_mileage'
+        )
 
         response.context_data['car_summary'] = car_summary_output
         response.context_data['car_summary_json'] = json.dumps(car_summary_output)
@@ -187,14 +189,24 @@ class TripSummaryAdmin(ReadOnlyAdminMixin, BaseSummaryAdmin):
         #   'user__email': 'testdrive@evezy.co.uk',
         #   'user__id': 52,
         #   'user__pk': 52}]
+        
+        driver_summary_output = qs.distinct(
+            'user__id','user__pk'
+        ).annotate(**summary).values(
+            'total','total_mileage', 'user__email', 'user__id', 'user__pk'
+        )
 
-        # response.context_data['driver_summary'] = driver_summary_output
-        # response.context_data['driver_summary_json'] = json.dumps(driver_summary_output)
+        response.context_data['driver_summary'] = driver_summary_output
+        response.context_data['driver_summary_json'] = json.dumps(driver_summary_output)
 
         # TODO #2c: Re-using the filters you wrote above, create a dict for the total trips and mileage
         #  Output: {'total': 112, 'total_mileage': 847}
+        
+        trip_summary_total = driver_summary_output = qs.annotate(**summary).values(
+            'total','total_mileage'
+        )
 
-        # response.context_data['car_summary_total'] = response.context_data['driver_summary_total'] = trip_summary_total
+        response.context_data['car_summary_total'] = response.context_data['driver_summary_total'] = trip_summary_total
 
         """
         Generate statistics by hour
