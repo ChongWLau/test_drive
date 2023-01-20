@@ -1,0 +1,88 @@
+{% extends 'admin/change_list.html' %}
+
+{% load global_filters humanize %}
+
+{% block content_title %}
+    <h1><strong>Event Summary {{ page_title_suffix }}</strong></h1>
+{% endblock %}
+
+{% block result_list %}
+
+    <div class="results">
+
+        <div class="results_table">
+            <table>
+                <thead>
+                <tr>
+                    <th>
+                        <div class="text">
+                            <a href="#">Driver</a>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="text">
+                            <a href="#">Low Alerts</a>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="text">
+                            <a href="#">Medium Alerts</a>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="text">
+                            <a href="#">High Alerts</a>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="text">
+                            <a href="#">Overspeed Alert</a>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="text">
+                            <a href="#">Total Alerts</a>
+                        </div>
+                    </th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for row in driver_event_summary %}
+                    <tr class=”{% cycle 'row1' 'row2' %}”>
+                        <td>
+                            {{ row.user__email }}
+                        </td>
+                        <td>
+                            {{ row.low_total|intcomma }}
+                        </td>
+                        <td>
+                            {{ row.medium_total|intcomma }}
+                        </td>
+                        <td>
+                            {{ row.high_total|intcomma }}
+                        </td>
+                        <td>
+                            {{ row.overspeed_total|intcomma }}
+                        </td>
+                        <td>{{ row.total_alerts|intcomma }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+
+                <tr style="font-weight:bold; border-top:2px solid #DDDDDD;">
+                    <td>Total</td>
+                    <td>{{ driver_event_summary_total.low_total|intcomma }}</td>
+                    <td>{{ driver_event_summary_total.medium_total|intcomma }}</td>
+                    <td>{{ driver_event_summary_total.high_total|intcomma }} </td>
+                    <td>{{ driver_event_summary_total.overspeed_total|intcomma }}</td>
+                    <td>{{ driver_event_summary_total.total_alerts|intcomma }}</td>
+                </tr>
+
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block pagination %}{% endblock %}

@@ -1,0 +1,9 @@
+# core utils
+#django-braces
+django-model-utils
+ipython
+tldextract
+
+# project reqs
+Django==1.11.18
+pip==18.1

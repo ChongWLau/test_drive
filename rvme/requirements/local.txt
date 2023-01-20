@@ -1,0 +1,6 @@
+-r common.txt
+
+# local utils
+Werkzeug
+django-debug-toolbar
+django-extensions
